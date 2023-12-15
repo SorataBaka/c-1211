@@ -9,18 +9,8 @@
 
 #include <locale.h>
 #include <ncurses.h>
-
 #include <stdlib.h>
-
-typedef struct
-{
-  int size;
-  int *cell;
-} Board;
-#define Y0 3
-#define X0 3
-
-char *sym[3] = {"・", "○", "×"}; // 空欄，プレーヤ１，プレーヤ２
+#include "game.h"
 
 int Title(void)
 {
@@ -41,154 +31,11 @@ int Title(void)
   refresh();
   return (getch());
 }
-void Free(Board *bd)
-{
-  if (bd == NULL)
-    return;
-  free(bd->cell);
-  free(bd);
-}
 
-Board *New(int n)
-{
-  Board *bd;
-
-  bd = (Board *)malloc(sizeof(Board));
-  if (bd == NULL)
-    return (NULL);
-
-  bd->size = n;
-  bd->cell = (int *)malloc(sizeof(int) * n * n);
-  if (bd->cell == NULL)
-  {
-    free(bd);
-    return (NULL);
-  }
-  return (bd);
-}
-
-/* ゲーム盤のプレーヤ番号を調べる関数
- * return：プレーヤ番号
- */
-int Get(Board *bd, int y, int x)
-{
-  if (x < 0)
-    return (-1); /* ハミ出し禁止 */
-  if (x >= bd->size)
-    return (-1); /* （バッファオーバラン防止） */
-  if (y < 0)
-    return (-1);
-  if (y >= bd->size)
-    return (-1);
-
-  return (bd->cell[y * bd->size + x]);
-}
-
-/* ゲーム盤にプレーヤ番号を書き込む関数 */
-void Set(Board *bd, int y, int x, int v)
-{
-  if (x < 0)
-    return; /* ハミ出し禁止 */
-  if (x >= bd->size)
-    return; /* （バッファ−バラン防止） */
-  if (y < 0)
-    return;
-  if (y >= bd->size)
-    return;
-
-  bd->cell[y * bd->size + x] = v;
-}
-
-/* ゲーム盤を初期化する関数 */
-void Clear(Board *bd)
-{
-  int y, x;
-
-  for (y = 0; y < bd->size; y++)
-  {
-    for (x = 0; x < bd->size; x++)
-    {
-      bd->cell[y * bd->size + x] = 0;
-    }
-  }
-}
-
-/* ゲーム盤を表示する関数 */
-void Draw(Board *bd)
-{
-  int y, x;
-
-  printf("\n");
-  for (y = 0; y < bd->size; y++)
-  {
-    for (x = 0; x < bd->size; x++)
-    {
-      mvprintw(y + Y0, 2 * x + X0, "%s", sym[Get(bd, y, x)]);
-    }
-  }
-  printw("\n\n");
-}
-
-// ゲームの本体... main() から移動・変更
-int Game(void)
-{
-  Board *bd;
-  int n;
-  int y, x, player;
-
-  erase();
-  mvprintw(Y0, X0, "ゲーム盤のサイズ > ");
-  refresh();
-  if (scanw("%d", &n) == ERR)
-    return (0);
-  // 数値入力無しだと ERR になるよ
-
-  bd = New(n);
-  if (bd == NULL)
-    goto ERROR;
-
-  Clear(bd);
-
-  player = 1;
-  while (1)
-  {
-  CONTINUE:
-    erase();
-    Draw(bd);
-    refresh();
-
-    while (1)
-    {
-      printw("%s の番 > ", sym[player]);
-      refresh();
-      if (scanw("%d %d", &y, &x) == ERR)
-        goto END;
-
-      if (Get(bd, y, x) == 0)
-        break;
-      printw("そこには置けません!!\nもう一度 ");
-    }
-    Set(bd, y, x, player);
-
-    player = player % 2 + 1;
-  }
-END:
-  printw("中止？（y/n）");
-  if (getch() != 'y')
-    goto CONTINUE;
-
-  Free(bd);
-  return (0);
-
-ERROR:
-  printw("メモリ確保失敗\n");
-  getch();
-  return (1);
-}
 int main(void)
 {
-  setlocale(LC_ALL, "jp_JP"); // 日本語を使うよ
-  initscr();                  // 端末制御を開始
+  setlocale(LC_ALL, ""); // 日本語を使うよ
+  initscr();             // 端末制御を開始
   while (1)
   {
     if (Title() == 'q')
